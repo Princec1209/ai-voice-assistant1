@@ -1,55 +1,58 @@
-const micButton = document.getElementById('mic-button');
-const aiCharacter = document.getElementById('ai-character');
-const responseBox = document.getElementById('response');
+const micButton = document.getElementById("mic-button");
+const aiCharacter = document.getElementById("ai-character");
+const responseBox = document.getElementById("response");
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition();
-recognition.lang = 'en-US';
+recognition.lang = "en-US";
+recognition.interimResults = false;
 
 const synth = window.speechSynthesis;
+let voices = [];
 
-let userName = localStorage.getItem('userName');
+function loadVoices() {
+  voices = synth.getVoices();
+}
+loadVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
 
-window.onload = () => {
-  if (!userName) {
-    const name = prompt("Hi, what's your name?");
-    if (name) {
-      userName = name;
-      localStorage.setItem('userName', name);
-      speak(`Nice to meet you, ${name}`);
-    }
-  } else {
-    speak(`Welcome back, ${userName}`);
-  }
-};
+const GEMINI_API_KEY = "AIzaSyClEK5QUc5-fJpNKPpYWOtssYXoORM0PYE";
 
-micButton.addEventListener('click', () => {
+micButton.addEventListener("click", () => {
+  responseBox.textContent = "Listening...";
+  aiCharacter.classList.add("listening");
   recognition.start();
-  aiCharacter.src = 'jarvis-listening.png';
 });
 
-recognition.onresult = async (event) => {
+recognition.onresult = (event) => {
   const transcript = event.results[0][0].transcript;
-  responseBox.innerText = 'Thinking...';
-  aiCharacter.src = 'jarvis-thinking.png';
+  responseBox.textContent = `You said: ${transcript}`;
+  aiCharacter.classList.remove("listening");
+  aiCharacter.classList.add("thinking");
 
-  const reply = await getGeminiResponse(transcript);
-  responseBox.innerText = reply;
-  speak(reply);
-  aiCharacter.src = 'jarvis-talking.png';
+  getGeminiResponse(transcript).then((responseText) => {
+    responseBox.textContent = responseText;
+    aiCharacter.classList.remove("thinking");
+    aiCharacter.classList.add("speaking");
+    speak(responseText);
+  });
 };
 
 function speak(text) {
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.voice = synth.getVoices().find(v => v.name.includes("Google UK English Male")) || synth.getVoices()[0];
+  utterance.voice = voices.find(v => v.name.includes("Google UK English Male")) || voices[0];
   synth.speak(utterance);
+  utterance.onend = () => {
+    aiCharacter.classList.remove("speaking");
+  };
 }
 
-// ✅ Gemini API Call using your key
-async function getGeminiResponse(query) {
+async function getGeminiResponse(prompt) {
   try {
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyClEK5QUc5-fJpNKPpYWOtssYXoORM0PYE",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -58,17 +61,29 @@ async function getGeminiResponse(query) {
         body: JSON.stringify({
           contents: [
             {
-              parts: [{ text: query }],
-              role: "user"
+              parts: [{ text: prompt }]
             }
           ]
         })
       }
     );
+
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn’t find an answer.";
+
+    if (
+      data &&
+      data.candidates &&
+      data.candidates.length > 0 &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts &&
+      data.candidates[0].content.parts.length > 0
+    ) {
+      return data.candidates[0].content.parts[0].text;
+    } else {
+      return "Sorry, I couldn't understand that.";
+    }
   } catch (error) {
-    console.error("Gemini Error:", error);
-    return "Something went wrong while contacting Gemini.";
+    console.error("Gemini API Error:", error);
+    return "Sorry, something went wrong while connecting to Gemini.";
   }
 }
