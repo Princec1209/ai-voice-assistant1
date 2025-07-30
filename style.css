@@ -1,0 +1,47 @@
+/* Center everything */
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+  font-family: 'Segoe UI', sans-serif;
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.container {
+  text-align: center;
+  padding: 20px;
+}
+
+#ai-character {
+  width: 220px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  transition: transform 0.3s ease-in-out;
+}
+
+#mic-button {
+  background-color: #00bcd4;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+#mic-button:hover {
+  background-color: #008ba3;
+}
+
+#response {
+  margin-top: 20px;
+  font-size: 18px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
