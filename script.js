@@ -35,7 +35,7 @@ recognition.onresult = async (event) => {
 
   const reply = await getGeminiResponse(transcript);
   responseBox.innerText = reply;
-  speak(reply + ". Thank you.");
+  speak(reply);
   aiCharacter.src = 'jarvis-talking.png';
 };
 
